@@ -1,0 +1,33 @@
+---
+description: DRF views must use APIView with separate input/output serializers
+globs: backend/**/views.py
+alwaysApply: false
+---
+
+# Django APIView Convention
+
+All project-owned DRF views must subclass `rest_framework.views.APIView`.
+
+## Rules
+
+- Do not use `generics.*`, `ViewSet`, or `ModelViewSet` for new endpoints
+- Implement HTTP verbs explicitly: `get`, `post`, `patch`, `put`, `delete`
+- Use separate input and output serializers (e.g. `UserRegisterInputSerializer` / `UserOutputSerializer`)
+- Set `permission_classes` on the view class
+
+## Example
+
+```python
+class RegisterView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = UserRegisterInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserOutputSerializer(user).data, status=status.HTTP_201_CREATED)
+```
+
+## Exception
+
+Third-party views (e.g. `TokenObtainPairView`, `TokenRefreshView` from simplejwt) may stay in `urls.py` as-is.

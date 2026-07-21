@@ -15,6 +15,26 @@ class UserRegisterInputSerializer(serializers.ModelSerializer):
         validate_password(value)
         return value
 
+    def validate_contact_no(self, value):
+        value = value.strip()
+
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Contact number should contain digits only."
+            )
+
+        if len(value) != 10:
+            raise serializers.ValidationError(
+                "Contact number must contain exactly 10 digits."
+            )
+
+        if value[0] not in "6789":
+            raise serializers.ValidationError(
+                "Contact number must start with 6, 7, 8 or 9."
+            )
+
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = CustomUser(**validated_data)
