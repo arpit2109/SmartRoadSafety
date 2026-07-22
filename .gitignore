@@ -24,4 +24,4 @@ frontend/build/
 frontend/dist/
 
 # AI Models
-backend/ai/models/**/*.pt
+# backend/ai/models/**/*.pt
