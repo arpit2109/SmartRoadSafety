@@ -20,11 +20,14 @@ class CustomUserAdmin(UserAdmin):
         "id",
         "username",
         "email",
+        "get_firstname",
+        "get_lastname",
         "contact_no",
         "is_staff",
         "is_active",
         "date_joined",
     )
+    list_select_related = ("profile",)
     actions = [activate_users, deactivate_users]
     search_fields = (
         "username",
@@ -46,6 +49,14 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
         ("Extra Info", {"fields": ("email", "contact_no")}),
     )
+
+    @admin.display(description='First Name', ordering='profile__firstname')
+    def get_firstname(self, obj):
+        return obj.profile.firstname if hasattr(obj, 'profile') else '-'
+
+    @admin.display(description='Last Name', ordering='profile__lastname')
+    def get_lastname(self, obj):
+        return obj.profile.lastname if hasattr(obj, 'profile') else '-'
 
 
 @admin.register(Profile)

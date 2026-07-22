@@ -102,8 +102,8 @@ Every object in the system — uploaded files, AI models, detection records — 
 19. ✅ Write tests: register (valid/invalid data), login (correct/wrong password), logout (blacklist check), profile read/patch
 20. ✅ Verify admin: create a superuser, log in, see CustomUser list with contact_no, email, is_staff, is_active columns
 21. ✅ Add admin actions "Activate selected users" and "Deactivate selected users" in CustomUserAdmin
-22. 🟡 Add `first_name` / `last_name` display in the user admin list using `list_select_related`
-23. 🟡 Create a seed script `python manage.py shell` snippet or management command to create a dev superuser non-interactively
+22. ✅ Add `first_name` / `last_name` display in the user admin list using `list_select_related`
+23. ✅ Create a seed script `python manage.py shell` snippet or management command to create a dev superuser non-interactively
 
 ---
 
