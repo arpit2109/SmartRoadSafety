@@ -69,3 +69,14 @@ class ProfileOutputSerializer(serializers.ModelSerializer):
             url = obj.profile_picture.url
             return request.build_absolute_uri(url) if request else url
         return None
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value

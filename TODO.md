@@ -10,32 +10,32 @@ Generated: 2026-07-22
 ---
 
 ## Module 1 — Project Initialization
-> **Status: ✅ ~95%** — Django project, React + Vite, Tailwind, Axios, DRF, JWT, CORS all configured.
+> **Status: ✅ 100%** — Django project, React + Vite, Tailwind, Axios, DRF, JWT, CORS all configured.
 
 ### Remaining Tasks
-1. 🟡 Add `python-dotenv` / `.env` handling — `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` should all come from `.env`, not hardcoded in `settings.py`
-2. 🟡 Create `frontend/.env` with `VITE_API_URL=http://localhost:8000` for frontend API base URL
-3. 🟡 Add `Procfile` / `render.yaml` stubs for future deployment (Module 13)
-4. 🟡 Create `CONTRIBUTING.md` or project README with setup instructions
-5. 🟡 Verify the React frontend builds (`npm run build`) without errors
-6. 🟡 Add `.gitignore` entries for `venv/`, `__pycache__/`, `*.pyc`, `.env`, `db.sqlite3`, `media/results/`, `media/uploads/`
+1. ✅ Add `python-dotenv` / `.env` handling — `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` should all come from `.env`, not hardcoded in `settings.py`
+2. ✅ Create `frontend/.env` with `VITE_API_URL=http://localhost:8000` for frontend API base URL
+3. ✅ Add `Procfile` / `render.yaml` stubs for future deployment (Module 13)
+4. ✅ Create `CONTRIBUTING.md` or project README with setup instructions
+5. ✅ Verify the React frontend builds (`npm run build`) without errors
+6. ✅ Add `.gitignore` entries for `venv/`, `__pycache__/`, `*.pyc`, `.env`, `db.sqlite3`, `media/results/`, `media/uploads/`
 
 ---
 
 ## Module 2 — Authentication & User Management
-> **Status: ✅ ~90%** — CustomUser, Profile, JWT register/login/refresh/profile(PATCH) all done. Missing logout + admin tweaks.
+> **Status: ✅ 100%** — CustomUser, Profile, JWT register/login/refresh/profile(PATCH), logout, change-password, and admin tweaks all done.
 
 ### Tasks
-1. 🔴 Add `POST /api/auth/logout/` endpoint that blacklists the refresh token (`rest_framework_simplejwt.token_blacklist`)
-2. 🔴 Add logout serializer (single `refresh` token field)
-3. 🔴 Wire logout into `accounts/urls.py`
-4. 🟡 Update `CustomUserAdmin` to display `contact_no` and `email` in the user list with search/filter (was in progress in earlier session — verify it's working)
-5. 🟡 Update `ProfileAdmin` to show profile picture thumbnail in the list view
-6. 🟡 Add `date_joined` and `is_active` to user admin list display
-7. 🟡 Add admin actions: "Deactivate selected users", "Activate selected users"
-8. 🔴 Add `POST /api/auth/change-password/` endpoint — requires auth, validates old password, saves new one
-9. 🔴 Write Django tests for register, login, logout, profile read/patch endpoints
-10. 🟡 Create a superuser seed script so the project works out of the box (`python manage.py createsuperuser`)
+1. ✅ Add `POST /api/auth/logout/` endpoint that blacklists the refresh token (`rest_framework_simplejwt.token_blacklist`)
+2. ✅ Add logout serializer (single `refresh` token field)
+3. ✅ Wire logout into `accounts/urls.py`
+4. ✅ Update `CustomUserAdmin` to display `contact_no` and `email` in the user list with search/filter (was in progress in earlier session — verify it's working)
+5. ✅ Update `ProfileAdmin` to show profile picture thumbnail in the list view
+6. ✅ Add `date_joined` and `is_active` to user admin list display
+7. ✅ Add admin actions: "Deactivate selected users", "Activate selected users"
+8. ✅ Add `POST /api/auth/change-password/` endpoint — requires auth, validates old password, saves new one
+9. ✅ Write Django tests for register, login, logout, profile read/patch endpoints
+10. ✅ Create a superuser seed script so the project works out of the box (`python manage.py createsuperuser`)
 
 ---
 

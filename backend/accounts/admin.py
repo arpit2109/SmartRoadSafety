@@ -1,7 +1,17 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
+from django.utils.html import format_html
+
 from .models import CustomUser, Profile
+
+@admin.action(description="Deactivate selected users")
+def deactivate_users(modeladmin, request, queryset):
+    queryset.update(is_active=False)
+
+@admin.action(description="Activate selected users")
+def activate_users(modeladmin, request, queryset):
+    queryset.update(is_active=True)
 
 
 @admin.register(CustomUser)
@@ -13,7 +23,9 @@ class CustomUserAdmin(UserAdmin):
         "contact_no",
         "is_staff",
         "is_active",
+        "date_joined",
     )
+    actions = [activate_users, deactivate_users]
     search_fields = (
         "username",
         "email",
@@ -43,6 +55,7 @@ class ProfileAdmin(admin.ModelAdmin):
         "user",
         "firstname",
         "lastname",
+        "profile_picture_thumbnail",
     )
     search_fields = (
         "user__username",
@@ -54,3 +67,9 @@ class ProfileAdmin(admin.ModelAdmin):
         "user__is_active",
     )
     ordering = ("id",)
+
+    @admin.display(description="Profile Picture")
+    def profile_picture_thumbnail(self, obj):
+        if obj.profile_picture:
+            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%; object-fit: cover;" />', obj.profile_picture.url)
+        return "-"

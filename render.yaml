@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: smartroadsafety
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && gunicorn smartroadsafety.wsgi"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
