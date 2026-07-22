@@ -6,6 +6,8 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
+    path("api/ai/", include("ai.urls")), # Assuming ai urls are prefixed with ai to prevent collision
+    path("api/detection/", include("detection.urls")),
 ]
 
 if settings.DEBUG:
