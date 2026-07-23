@@ -41,31 +41,31 @@ Starting with a clean, repeatable setup means every developer on the project can
 
 ## Tasks
 
-1. ✅ Create Django project via `django-admin startproject smartroadsafety backend/`
-2. ✅ Install Django REST Framework (`djangorestframework`) and add to `INSTALLED_APPS`
-3. ✅ Install `djangorestframework-simplejwt` for JWT authentication
-4. ✅ Install `django-cors-headers` and configure CORS to allow the React dev server (localhost:5173)
-5. ✅ Configure `MEDIA_URL = /media/` and `MEDIA_ROOT` pointing to `backend/media/`
-6. ✅ Create `accounts/`, `ai/`, `detection/` Django apps under `backend/`
-7. ✅ Register all three apps in `INSTALLED_APPS`
-8. ✅ Create `backend/media/uploads/` and `backend/media/results/` directories
-9. ✅ Create `backend/media/models/{helmet,vehicle,bike,custom}/` for AIModel weight files
-10. ✅ Initialize React app under `frontend/` using Vite (`npm create vite`)
-11. ✅ Install and configure Tailwind CSS v4 with `@tailwindcss/vite` plugin
-12. ✅ Install `axios` for HTTP requests from React to Django
-13. ✅ Install and configure `react-router-dom` v7 for client-side routing
-14. ✅ Configure `vite.config.js` with a proxy for `/api` → `http://localhost:8000`
-15. ✅ Create `backend/.env` with `SECRET_KEY`, `DEBUG=True`, `ALLOWED_HOSTS=localhost,127.0.0.1`
-16. ✅ Create `frontend/.env` with `VITE_API_URL=http://localhost:8000`
-17. ✅ Install `python-dotenv` in backend; load `.env` in `settings.py`
-18. ✅ Create `.gitignore` covering `venv/`, `__pycache__/`, `*.pyc`, `db.sqlite3`, `.env`, `media/results/`, `media/uploads/`
-19. ✅ Add `frontend/node_modules/` to `.gitignore`
-20. ✅ Pin all Python deps in `requirements.txt` (Django==6.0.7, djangorestframework==3.17.1, etc.)
-21. ✅ Pin all frontend deps in `frontend/package.json` (no `*` versions in production deps)
-22. ✅ Create `README.md` with step-by-step setup: Python venv, pip install, npm install, run commands
-23. ✅ Create `Procfile` stub (`web: gunicorn smartroadsafety.wsgi`) for future deployment
-24. 🟡 Verify `npm run build` in frontend produces a clean production build with no errors
-25. 🟡 Run `python manage.py check` with no warnings on a fresh `db.sqlite3`
+1. ✅ Create Django project via `django-admin startproject smartroadsafety backend/` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/)
+2. ✅ Install Django REST Framework (`djangorestframework`) and add to `INSTALLED_APPS` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+3. ✅ Install `djangorestframework-simplejwt` for JWT authentication [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+4. ✅ Install `django-cors-headers` and configure CORS to allow the React dev server (localhost:5173) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+5. ✅ Configure `MEDIA_URL = /media/` and `MEDIA_ROOT` pointing to `backend/media/` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+6. ✅ Create `accounts/`, `ai/`, `detection/` Django apps under `backend/` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/)
+7. ✅ Register all three apps in `INSTALLED_APPS` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+8. ✅ Create `backend/media/uploads/` and `backend/media/results/` directories [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/media/)
+9. ✅ Create `backend/media/models/{helmet,vehicle,bike,custom}/` for AIModel weight files [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/media/models/)
+10. ✅ Initialize React app under `frontend/` using Vite (`npm create vite`) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/)
+11. ✅ Install and configure Tailwind CSS v4 with `@tailwindcss/vite` plugin [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/package.json)
+12. ✅ Install `axios` for HTTP requests from React to Django [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/package.json)
+13. ✅ Install and configure `react-router-dom` v7 for client-side routing [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/package.json)
+14. ✅ Configure `vite.config.js` with a proxy for `/api` → `http://localhost:8000` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/vite.config.js)
+15. ✅ Create `backend/.env` with `SECRET_KEY`, `DEBUG=True`, `ALLOWED_HOSTS=localhost,127.0.0.1` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/.env)
+16. ✅ Create `frontend/.env` with `VITE_API_URL=http://localhost:8000` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/.env)
+17. ✅ Install `python-dotenv` in backend; load `.env` in `settings.py` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+18. ✅ Create `.gitignore` covering `venv/`, `__pycache__/`, `*.pyc`, `db.sqlite3`, `.env`, `media/results/`, `media/uploads/` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/.gitignore)
+19. ✅ Add `frontend/node_modules/` to `.gitignore` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/.gitignore)
+20. ✅ Pin all Python deps in `requirements.txt` (Django==6.0.7, djangorestframework==3.17.1, etc.) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/requirements.txt)
+21. ✅ Pin all frontend deps in `frontend/package.json` (no `*` versions in production deps) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/package.json)
+22. ✅ Create `README.md` with step-by-step setup: Python venv, pip install, npm install, run commands [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/README.md)
+23. ✅ Create `Procfile` stub (`web: gunicorn smartroadsafety.wsgi`) for future deployment [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/Procfile)
+24. ✅ Verify `npm run build` in frontend produces a clean production build with no errors [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/frontend/dist/)
+25. ✅ Run `python manage.py check` with no warnings on a fresh `db.sqlite3` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/manage.py)
 
 ---
 
@@ -81,29 +81,29 @@ Every object in the system — uploaded files, AI models, detection records — 
 
 ## Tasks
 
-1. ✅ Define `CustomUserManager` in `accounts/managers.py` with `create_user()` and `create_superuser()`
-2. ✅ Define `CustomUser` model in `accounts/models.py` — extends `AbstractUser`, adds `email` (unique) and `contact_no` (10-digit, Indian mobile validation)
-3. ✅ Set `AUTH_USER_MODEL = "accounts.CustomUser"` in `settings.py`
-4. ✅ Define `Profile` model — `OneToOneField` to `CustomUser`, fields: `firstname`, `lastname`, `profile_picture` (ImageField)
-5. ✅ Wire `post_save` signal in `accounts/signals.py` to auto-create a `Profile` on new user creation
-6. ✅ Register both models in `accounts/admin.py` with full `CustomUserAdmin` (list_display, search, filter, fieldsets, actions)
-7. ✅ Create `UserRegisterInputSerializer` — validates username, email, contact_no (regex 10-digit Indian), password (min 8 chars + Django validators)
-8. ✅ Create `UserOutputSerializer` — returns id, username, email, contact_no, date_joined (read-only)
-9. ✅ Create `ProfileInputSerializer` — accepts firstname, lastname, profile_picture
-10. ✅ Create `ProfileOutputSerializer` — returns id, firstname, lastname, profile_picture (absolute URL)
-11. ✅ Implement `RegisterView` — `POST /api/auth/register/`, creates user + profile, returns UserOutputSerializer
-12. ✅ Configure SimpleJWT in `settings.py` — access token lifetime 30 days, refresh token lifetime 30 days, blacklist enabled
-13. ✅ Wire SimpleJWT views: `TokenObtainPairView` at `login/`, `TokenRefreshView` at `token/refresh/`
-14. ✅ Implement `ProfileView` — `GET` returns profile (auto-creates if missing), `PATCH` updates it
-15. ✅ Add `POST /api/auth/logout/` endpoint — accepts `refresh` token, adds it to SimpleJWT blacklist
-16. ✅ Add `POST /api/auth/change-password/` — validates old password, saves new hashed password
-17. ✅ Add `IsAuthenticated` permission on all auth endpoints except login/register
-18. ✅ Run `makemigrations accounts` and `migrate` — verify schema is clean
-19. ✅ Write tests: register (valid/invalid data), login (correct/wrong password), logout (blacklist check), profile read/patch
-20. ✅ Verify admin: create a superuser, log in, see CustomUser list with contact_no, email, is_staff, is_active columns
-21. ✅ Add admin actions "Activate selected users" and "Deactivate selected users" in CustomUserAdmin
-22. ✅ Add `first_name` / `last_name` display in the user admin list using `list_select_related`
-23. ✅ Create a seed script `python manage.py shell` snippet or management command to create a dev superuser non-interactively
+1. ✅ Define `CustomUserManager` in `accounts/managers.py` with `create_user()` and `create_superuser()` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/managers.py)
+2. ✅ Define `CustomUser` model in `accounts/models.py` — extends `AbstractUser`, adds `email` (unique) and `contact_no` (10-digit, Indian mobile validation) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/models.py)
+3. ✅ Set `AUTH_USER_MODEL = "accounts.CustomUser"` in `settings.py` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+4. ✅ Define `Profile` model — `OneToOneField` to `CustomUser`, fields: `firstname`, `lastname`, `profile_picture` (ImageField) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/models.py)
+5. ✅ Wire `post_save` signal in `accounts/signals.py` to auto-create a `Profile` on new user creation [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/signals.py)
+6. ✅ Register both models in `accounts/admin.py` with full `CustomUserAdmin` (list_display, search, filter, fieldsets, actions) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/admin.py)
+7. ✅ Create `UserRegisterInputSerializer` — validates username, email, contact_no (regex 10-digit Indian), password (min 8 chars + Django validators) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/serializers.py)
+8. ✅ Create `UserOutputSerializer` — returns id, username, email, contact_no, date_joined (read-only) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/serializers.py)
+9. ✅ Create `ProfileInputSerializer` — accepts firstname, lastname, profile_picture [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/serializers.py)
+10. ✅ Create `ProfileOutputSerializer` — returns id, firstname, lastname, profile_picture (absolute URL) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/serializers.py)
+11. ✅ Implement `RegisterView` — `POST /api/auth/register/`, creates user + profile, returns UserOutputSerializer [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/views.py)
+12. ✅ Configure SimpleJWT in `settings.py` — access token lifetime 30 days, refresh token lifetime 30 days, blacklist enabled [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/settings.py)
+13. ✅ Wire SimpleJWT views: `TokenObtainPairView` at `login/`, `TokenRefreshView` at `token/refresh/` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/smartroadsafety/urls.py)
+14. ✅ Implement `ProfileView` — `GET` returns profile (auto-creates if missing), `PATCH` updates it [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/views.py)
+15. ✅ Add `POST /api/auth/logout/` endpoint — accepts `refresh` token, adds it to SimpleJWT blacklist [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/views.py)
+16. ✅ Add `POST /api/auth/change-password/` — validates old password, saves new hashed password [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/views.py)
+17. ✅ Add `IsAuthenticated` permission on all auth endpoints except login/register [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/views.py)
+18. ✅ Run `makemigrations accounts` and `migrate` — verify schema is clean [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/migrations/)
+19. ✅ Write tests: register (valid/invalid data), login (correct/wrong password), logout (blacklist check), profile read/patch [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/tests.py)
+20. ✅ Verify admin: create a superuser, log in, see CustomUser list with contact_no, email, is_staff, is_active columns [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/admin.py)
+21. ✅ Add admin actions "Activate selected users" and "Deactivate selected users" in CustomUserAdmin [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/admin.py)
+22. ✅ Add `first_name` / `last_name` display in the user admin list using `list_select_related` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/admin.py)
+23. ✅ Create a seed script `python manage.py shell` snippet or management command to create a dev superuser non-interactively [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/accounts/management/commands/seed_superuser.py)
 
 ---
 
@@ -119,49 +119,49 @@ This is the architectural backbone of the entire platform. Without this, every n
 
 ## Tasks
 
-1. ✅ Define `AIModel` model in `ai/models.py`:
+1. ✅ Define `AIModel` model in `ai/models.py`: [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/models.py)
    - `Category` TextChoices: `helmet`, `vehicle`, `bike`, `custom`
    - `WeightFormat` TextChoices: `pt`, `onnx`, `engine`
    - Fields: `name`, `category`, `version`, `weight_file` (FileField → `models/<category>/...`), `weight_format`, `default_confidence`, `default_iou`, `accuracy` (nullable), `is_active`, `is_default`, `uploaded_by` (FK), `created_at`, `updated_at`
    - Unique constraint on `(name, version, category)`
    - Indexes on `(category, is_active)` and `is_default`
-2. ✅ **Add new fields:** `description` CharField(500), `imgsz` PositiveIntegerField(default=640), `classes` JSONField(default=list) — store class names like `["driver_with_helmet", "bike", ...]`
-3. ✅ Run `makemigrations ai` and `migrate` for all new fields
-4. ✅ Implement `ai/utils.py` — `validate_weight_extension()`, `validate_confidence/iou/accuracy()`, `resolve_model_path()`, `delete_weight_file()`, `get_default_model()`, `get_active_model_by_name()`
-5. ✅ Implement `ai/cache.py` — `ModelCache` class: `get()`, `set()`, `invalidate()`, `clear()`, `stats()`. Thread-safe via `threading.Lock`. Module-level singleton `cache`.
-6. ✅ Implement `ai/model_loader.py`:
+2. ✅ **Add new fields:** `description` CharField(500), `imgsz` PositiveIntegerField(default=640), `classes` JSONField(default=list) — store class names like `["driver_with_helmet", "bike", ...]` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/models.py)
+3. ✅ Run `makemigrations ai` and `migrate` for all new fields [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/migrations/)
+4. ✅ Implement `ai/utils.py` — `validate_weight_extension()`, `validate_confidence/iou/accuracy()`, `resolve_model_path()`, `delete_weight_file()`, `get_default_model()`, `get_active_model_by_name()` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/utils.py)
+5. ✅ Implement `ai/cache.py` — `ModelCache` class: `get()`, `set()`, `invalidate()`, `clear()`, `stats()`. Thread-safe via `threading.Lock`. Module-level singleton `cache`. [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/cache.py)
+6. ✅ Implement `ai/model_loader.py`: [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/model_loader.py)
    - `load_model(name, category=None)` → returns cached or freshly-loaded YOLO instance
    - `load_default(category=None)` → returns the active default model
    - `warm_cache()` → pre-loads all active models at startup
    - Custom errors: `ModelNotFound`, `NoDefaultModel`, `ModelFileMissing`, `ModelLoadError`
    - Lazy import of `ultralytics.YOLO` inside `_build_framework_instance()`
-7. ✅ Implement `ai/services.py`:
+7. ✅ Implement `ai/services.py`: [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/services.py)
    - `create_model(...)` — validates, saves file + row in atomic transaction
    - `set_as_default()` — unsets siblings atomically via `transaction.atomic`
    - `activate()` / `deactivate()` — toggles state, invalidates cache
    - `replace_weight_file()` — swaps file, cleans old one, invalidates cache
    - `hard_delete()` — removes row and file
    - `bulk_activate()` / `bulk_deactivate()` / `bulk_set_default()` for admin actions
-8. ✅ Implement `ai/serializers.py`:
+8. ✅ Implement `ai/serializers.py`: [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/serializers.py)
    - `AIModelListSerializer` — slim fields for list view
    - `AIModelDetailSerializer` — all fields + `weight_file_url` (absolute) + `file_size_bytes`
    - `AIModelUploadSerializer` — write serializer for multipart upload
    - `AIModelUpdateSerializer` — PATCH serializer for mutable fields
    - `CategoryStatSerializer` — for the categories endpoint
-9. ✅ Implement `ai/views.py` — `AIModelViewSet` with: list/retrieve, create (multipart), partial_update, destroy (soft), activate/deactivate/set-default custom actions, categories endpoint, cache-stats endpoint
-10. ✅ Wire `ai/urls.py` with `DefaultRouter`
-11. ✅ Implement `ai/admin.py` — full `AIModelAdmin`: list_display, list_filter, search, fieldsets, readonly_fields, admin actions (activate/deactivate/make_default)
-12. ✅ Implement `ai/signals.py` — `post_save` and `post_delete` receivers to invalidate cache on weight file change, is_active change, or row deletion
-13. ✅ Create `ai/apps.py` with `ready()` that imports signals
-14. ✅ Create `python manage.py register_model` management command for CLI model registration
-15. ✅ Update `register_model` command to accept `--classes` JSON argument
-16. ✅ Write `test_models.py` — AIModel creation, unique constraint violation, defaults, string representation
-17. ✅ Write `test_services.py` — `set_as_default` unsets sibling, `deactivate` clears cache, `replace_weight_file` removes old file
-18. ✅ Write `test_cache.py` — concurrent get/set under ThreadPoolExecutor (5 threads, 10 ops each), hit/miss/load counters
-19. ✅ Write `test_api.py` — full CRUD via `APIClient`, anonymous=401, regular user=403 on upload, admin=201; multipart upload with dummy `.pt` in `tests/fixtures/`
-20. ✅ Write `test_loader.py` — monkey-patch `YOLO` constructor, verify second call hits cache
-21. ✅ Run `python manage.py test ai` — fix any failures
-22. ✅ Verify the admin shows all new fields (description, imgsz, classes); update serializers to include them
+9. ✅ Implement `ai/views.py` — `AIModelViewSet` with: list/retrieve, create (multipart), partial_update, destroy (soft), activate/deactivate/set-default custom actions, categories endpoint, cache-stats endpoint [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/views.py)
+10. ✅ Wire `ai/urls.py` with `DefaultRouter` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/urls.py)
+11. ✅ Implement `ai/admin.py` — full `AIModelAdmin`: list_display, list_filter, search, fieldsets, readonly_fields, admin actions (activate/deactivate/make_default) [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/admin.py)
+12. ✅ Implement `ai/signals.py` — `post_save` and `post_delete` receivers to invalidate cache on weight file change, is_active change, or row deletion [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/signals.py)
+13. ✅ Create `ai/apps.py` with `ready()` that imports signals [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/apps.py)
+14. ✅ Create `python manage.py register_model` management command for CLI model registration [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/management/commands/register_model.py)
+15. ✅ Update `register_model` command to accept `--classes` JSON argument [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/management/commands/register_model.py)
+16. ✅ Write `test_models.py` — AIModel creation, unique constraint violation, defaults, string representation [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/test_models.py)
+17. ✅ Write `test_services.py` — `set_as_default` unsets sibling, `deactivate` clears cache, `replace_weight_file` removes old file [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/test_services.py)
+18. ✅ Write `test_cache.py` — concurrent get/set under ThreadPoolExecutor (5 threads, 10 ops each), hit/miss/load counters [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/test_cache.py)
+19. ✅ Write `test_api.py` — full CRUD via `APIClient`, anonymous=401, regular user=403 on upload, admin=201; multipart upload with dummy `.pt` in `tests/fixtures/` [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/test_api.py)
+20. ✅ Write `test_loader.py` — monkey-patch `YOLO` constructor, verify second call hits cache [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/test_loader.py)
+21. ✅ Run `python manage.py test ai` — fix any failures [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/)
+22. ✅ Verify the admin shows all new fields (description, imgsz, classes); update serializers to include them [Reference](file:///c:/Users/patel/OneDrive/Desktop/DATA/Projects/SmartRoadSafety/backend/ai/admin.py)
 
 ---
 
