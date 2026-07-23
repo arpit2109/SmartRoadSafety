@@ -63,6 +63,20 @@ class AIModel(models.Model):
         choices=WeightFormat.choices,
         default=WeightFormat.PYTORCH,
     )
+    description = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text="Optional free-text description of the model.",
+    )
+    imgsz = models.PositiveIntegerField(
+        default=640,
+        help_text="Inference image size (e.g. 640).",
+    )
+    classes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of class names this model predicts, e.g. ['helmet', 'no_helmet'].",
+    )
 
     # ----- inference defaults -----
     default_confidence = models.FloatField(

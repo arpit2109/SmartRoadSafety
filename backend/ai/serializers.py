@@ -51,6 +51,7 @@ class AIModelListSerializer(serializers.ModelSerializer):
             "weight_format",
             "is_active",
             "is_default",
+            "uploaded_by",
             "created_at",
         )
 
@@ -71,6 +72,9 @@ class AIModelDetailSerializer(serializers.ModelSerializer):
             "weight_file_url",
             "file_size_bytes",
             "weight_format",
+            "description",
+            "imgsz",
+            "classes",
             "default_confidence",
             "default_iou",
             "accuracy",
@@ -127,6 +131,9 @@ class AIModelUploadSerializer(serializers.Serializer):
         default=AIModel.WeightFormat.PYTORCH,
         required=False,
     )
+    description = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    imgsz = serializers.IntegerField(required=False, default=640)
+    classes = serializers.JSONField(required=False, default=list)
     default_confidence = serializers.FloatField(
         required=False, default=0.25, min_value=0.0, max_value=1.0
     )
@@ -168,6 +175,9 @@ class AIModelUpdateSerializer(serializers.ModelSerializer):
         fields = (
             "version",
             "weight_file",
+            "description",
+            "imgsz",
+            "classes",
             "default_confidence",
             "default_iou",
             "accuracy",

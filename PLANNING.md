@@ -119,14 +119,14 @@ This is the architectural backbone of the entire platform. Without this, every n
 
 ## Tasks
 
-1. 🟡 Define `AIModel` model in `ai/models.py`:
+1. ✅ Define `AIModel` model in `ai/models.py`:
    - `Category` TextChoices: `helmet`, `vehicle`, `bike`, `custom`
    - `WeightFormat` TextChoices: `pt`, `onnx`, `engine`
    - Fields: `name`, `category`, `version`, `weight_file` (FileField → `models/<category>/...`), `weight_format`, `default_confidence`, `default_iou`, `accuracy` (nullable), `is_active`, `is_default`, `uploaded_by` (FK), `created_at`, `updated_at`
    - Unique constraint on `(name, version, category)`
    - Indexes on `(category, is_active)` and `is_default`
-2. 🟡 **Add new fields:** `description` CharField(500), `imgsz` PositiveIntegerField(default=640), `classes` JSONField(default=list) — store class names like `["driver_with_helmet", "bike", ...]`
-3. 🟡 Run `makemigrations ai` and `migrate` for all new fields
+2. ✅ **Add new fields:** `description` CharField(500), `imgsz` PositiveIntegerField(default=640), `classes` JSONField(default=list) — store class names like `["driver_with_helmet", "bike", ...]`
+3. ✅ Run `makemigrations ai` and `migrate` for all new fields
 4. ✅ Implement `ai/utils.py` — `validate_weight_extension()`, `validate_confidence/iou/accuracy()`, `resolve_model_path()`, `delete_weight_file()`, `get_default_model()`, `get_active_model_by_name()`
 5. ✅ Implement `ai/cache.py` — `ModelCache` class: `get()`, `set()`, `invalidate()`, `clear()`, `stats()`. Thread-safe via `threading.Lock`. Module-level singleton `cache`.
 6. ✅ Implement `ai/model_loader.py`:
@@ -155,13 +155,13 @@ This is the architectural backbone of the entire platform. Without this, every n
 13. ✅ Create `ai/apps.py` with `ready()` that imports signals
 14. ✅ Create `python manage.py register_model` management command for CLI model registration
 15. ✅ Update `register_model` command to accept `--classes` JSON argument
-16. 🟡 Write `test_models.py` — AIModel creation, unique constraint violation, defaults, string representation
-17. 🟡 Write `test_services.py` — `set_as_default` unsets sibling, `deactivate` clears cache, `replace_weight_file` removes old file
-18. 🟡 Write `test_cache.py` — concurrent get/set under ThreadPoolExecutor (5 threads, 10 ops each), hit/miss/load counters
-19. 🟡 Write `test_api.py` — full CRUD via `APIClient`, anonymous=401, regular user=403 on upload, admin=201; multipart upload with dummy `.pt` in `tests/fixtures/`
-20. 🟡 Write `test_loader.py` — monkey-patch `YOLO` constructor, verify second call hits cache
-21. 🟡 Run `python manage.py test ai` — fix any failures
-22. 🟡 Verify the admin shows all new fields (description, imgsz, classes); update serializers to include them
+16. ✅ Write `test_models.py` — AIModel creation, unique constraint violation, defaults, string representation
+17. ✅ Write `test_services.py` — `set_as_default` unsets sibling, `deactivate` clears cache, `replace_weight_file` removes old file
+18. ✅ Write `test_cache.py` — concurrent get/set under ThreadPoolExecutor (5 threads, 10 ops each), hit/miss/load counters
+19. ✅ Write `test_api.py` — full CRUD via `APIClient`, anonymous=401, regular user=403 on upload, admin=201; multipart upload with dummy `.pt` in `tests/fixtures/`
+20. ✅ Write `test_loader.py` — monkey-patch `YOLO` constructor, verify second call hits cache
+21. ✅ Run `python manage.py test ai` — fix any failures
+22. ✅ Verify the admin shows all new fields (description, imgsz, classes); update serializers to include them
 
 ---
 

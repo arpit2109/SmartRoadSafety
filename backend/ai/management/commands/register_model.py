@@ -30,6 +30,7 @@ Examples
 from __future__ import annotations
 
 import os
+import json
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -112,6 +113,9 @@ class Command(BaseCommand):
             action="store_true",
             help="Register as inactive (is_active=False).",
         )
+        parser.add_argument("--description", type=str, default="", help="Optional description.")
+        parser.add_argument("--imgsz", type=int, default=640, help="Inference image size (e.g. 640).")
+        parser.add_argument("--classes", type=str, default="[]", help="JSON string of classes, e.g. '[\"helmet\"]'")
         parser.add_argument(
             "--interactive",
             action="store_true",
@@ -136,6 +140,16 @@ class Command(BaseCommand):
         default_iou = options["default_iou"]
         is_default = options["is_default"]
         is_active = not options["inactive"]
+        description = options["description"]
+        imgsz = options["imgsz"]
+        try:
+            classes = json.loads(options["classes"])
+            if not isinstance(classes, list):
+                raise ValueError("Classes must be a JSON array.")
+        except json.JSONDecodeError:
+            raise CommandError("Invalid JSON for --classes argument.")
+        except ValueError as e:
+            raise CommandError(str(e))
 
         # --- validate required fields ---
         missing = [
@@ -190,6 +204,9 @@ class Command(BaseCommand):
                 default_confidence=default_confidence,
                 default_iou=default_iou,
                 accuracy=accuracy,
+                description=description,
+                imgsz=imgsz,
+                classes=classes,
                 is_active=is_active,
                 is_default=False,  # promote via services.set_as_default below
             )

@@ -46,13 +46,13 @@ class AIModelAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            "fields": ("name", "category", "version"),
+            "fields": ("name", "category", "version", "description", "classes"),
         }),
         ("Weight file", {
             "fields": ("weight_file", "weight_file_preview", "weight_format"),
         }),
         ("Inference defaults", {
-            "fields": ("default_confidence", "default_iou", "accuracy"),
+            "fields": ("imgsz", "default_confidence", "default_iou", "accuracy"),
         }),
         ("State", {
             "fields": ("is_active", "is_default"),
