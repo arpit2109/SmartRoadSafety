@@ -12,16 +12,21 @@ from django.conf import settings
 from django.db import models
 
 
+def _user_folder(user) -> str:
+    return f"user_{user.pk}" if (user and user.pk) else "anonymous"
+
+
 def result_upload_path(instance: "DetectionRecord", filename: str) -> str:
-    """Store annotated images/videos under history/results/<user_id>/."""
-    ext = filename.split(".")[-1]
-    uid = uuid.uuid4().hex[:8]
-    return f"history/results/{instance.user.id}/{uid}.{ext}"
+    """Store annotated images/videos under history/results/<user>/."""
+    ext = filename.rsplit(".", 1)[-1] if "." in filename else "jpg"
+    uid = uuid.uuid4().hex[:12]
+    return f"history/results/{_user_folder(instance.user)}/{uid}.{ext}"
 
 
 def original_upload_path(instance: "DetectionRecord", filename: str) -> str:
-    """Store uploaded files under history/uploads/<user_id>/."""
-    return f"history/uploads/{instance.user.id}/{filename}"
+    """Store uploaded files under history/uploads/<user>/."""
+    safe_name = filename.replace("/", "_").replace("\\", "_")
+    return f"history/uploads/{_user_folder(instance.user)}/{safe_name}"
 
 
 class DetectionRecord(models.Model):
@@ -32,6 +37,7 @@ class DetectionRecord(models.Model):
     class DetectionMode(models.TextChoices):
         MANUAL = "manual", "Manual"
         AUTO = "auto", "Automatic"
+        VIDEO = "video", "Video"
         WEBCAM = "webcam", "Webcam"
 
     # ── ownership ────────────────────────────────────────────────────────────

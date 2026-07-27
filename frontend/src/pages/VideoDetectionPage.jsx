@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Video, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
-const ManualDetection = () => {
+/**
+ * VideoDetectionPage
+ *
+ * Upload a video file and run detection on sampled frames.
+ */
+const VideoDetectionPage = () => {
   const [models, setModels] = useState([]);
   const [selectedModelId, setSelectedModelId] = useState('');
   const [file, setFile] = useState(null);
@@ -10,20 +16,15 @@ const ManualDetection = () => {
   const [loading, setLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [modelsError, setModelsError] = useState(null);
+  const [error, setError] = useState('');
 
-  // Detection parameters
-  const [confidence, setConfidence] = useState(0.25);
-  const [iou, setIou] = useState(0.45);
-
-  // Fetch available models on mount
   useEffect(() => {
     const fetchModels = async () => {
       try {
         const res = await api.get('/api/ai/models/dropdown/');
         setModels(res.data);
         setModelsError(null);
-      } catch (err) {
-        console.error('Failed to load models:', err);
+      } catch {
         setModelsError('Could not load models. Is the backend running?');
       } finally {
         setModelsLoading(false);
@@ -38,6 +39,7 @@ const ManualDetection = () => {
       setFile(selected);
       setPreview(URL.createObjectURL(selected));
       setResult(null);
+      setError('');
     }
   };
 
@@ -45,36 +47,41 @@ const ManualDetection = () => {
     if (!file || !selectedModelId) return;
 
     setLoading(true);
+    setError('');
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('video', file);
     formData.append('model_id', selectedModelId);
-    formData.append('confidence', confidence.toString());
-    formData.append('iou', iou.toString());
 
     try {
       const response = await api.post(
-        '/api/detection/image/',
+        '/api/detection/video/',
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
       setResult(response.data);
     } catch (err) {
-      const msg =
+      setError(
         err.response?.data?.error ||
-        (err.response?.status === 404
-          ? 'Model not found. It may have been deactivated.'
-          : 'Detection failed. Check the backend is running.');
-      alert(msg);
+        'Video detection failed. Check the backend is running.'
+      );
     } finally {
       setLoading(false);
     }
-  }, [file, selectedModelId, confidence, iou]);
+  }, [file, selectedModelId]);
 
   const canDetect = Boolean(file && selectedModelId && !loading && !modelsLoading);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-800">Manual Detection</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <Video size={24} className="text-indigo-500" />
+          Video Detection
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Upload a video — we'll run detection on sampled frames and give you a summary.
+        </p>
+      </div>
 
       {modelsError && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -84,10 +91,10 @@ const ManualDetection = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-        {/* Upload / Config Section */}
+        {/* Config / Upload Section */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
           <h2 className="text-lg font-semibold text-slate-800 border-b pb-2">
-            Upload & Parameters
+            Video & Model
           </h2>
 
           {/* Model selector */}
@@ -101,20 +108,18 @@ const ManualDetection = () => {
               </div>
             ) : models.length === 0 ? (
               <div className="w-full bg-slate-50 border border-slate-300 text-slate-500 text-sm rounded-lg p-2.5">
-                No active models available. Ask an admin to register one.
+                No active models available.
               </div>
             ) : (
               <select
                 value={selectedModelId}
                 onChange={(e) => setSelectedModelId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                className="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5"
               >
                 <option value="">-- Select a model --</option>
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name} v{m.version}
-                    {m.is_default ? ' (default)' : ''}
-                    {' '}
+                    {m.name} v{m.version}{' '}
                     <span className="text-slate-400">[{m.category}]</span>
                   </option>
                 ))}
@@ -122,58 +127,10 @@ const ManualDetection = () => {
             )}
           </div>
 
-          {/* Confidence slider */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-medium text-slate-700">
-                Confidence Threshold
-              </label>
-              <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                {(confidence * 100).toFixed(0)}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0.05"
-              max="0.95"
-              step="0.05"
-              value={confidence}
-              onChange={(e) => setConfidence(parseFloat(e.target.value))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Higher = fewer but more confident detections
-            </p>
-          </div>
-
-          {/* IoU slider */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-medium text-slate-700">
-                IoU (Non-Max Suppression)
-              </label>
-              <span className="text-sm font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded">
-                {(iou * 100).toFixed(0)}%
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0.1"
-              max="0.9"
-              step="0.05"
-              value={iou}
-              onChange={(e) => setIou(parseFloat(e.target.value))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Lower = keep more overlapping boxes
-            </p>
-          </div>
-
-          {/* Image upload */}
+          {/* Video upload */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Upload Image
+              Upload Video
             </label>
             <div className="flex items-center justify-center w-full">
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
@@ -183,13 +140,13 @@ const ManualDetection = () => {
                     or drag and drop
                   </p>
                   <p className="text-xs text-slate-500">
-                    JPEG, PNG, BMP, WebP
+                    MP4, AVI, MOV, MKV, WMV
                   </p>
                 </div>
                 <input
                   type="file"
                   className="hidden"
-                  accept="image/*"
+                  accept="video/mp4,video/x-msvideo,video/quicktime,video/x-matroska,video/x-ms-wmv"
                   onChange={handleFileChange}
                 />
               </label>
@@ -205,89 +162,111 @@ const ManualDetection = () => {
           <button
             onClick={handleDetect}
             disabled={!canDetect}
-            className={`w-full py-3 px-4 rounded-lg text-white font-medium shadow-sm transition-all ${
+            className={`w-full py-3 px-4 rounded-lg text-white font-medium shadow-sm transition-all flex items-center justify-center gap-2 ${
               !canDetect
                 ? 'bg-slate-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md'
+                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md'
             }`}
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
+              <>
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Processing...
-              </span>
+                Processing frames...
+              </>
             ) : (
-              'Run Detection'
+              <>
+                <Video size={16} />
+                Run Video Detection
+              </>
             )}
           </button>
+
+          <p className="text-xs text-slate-400 text-center">
+            Every 10th frame is processed to keep response time reasonable.
+          </p>
         </div>
 
-        {/* Preview / Results Section */}
+        {/* Results Section */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6 flex flex-col">
           <h2 className="text-lg font-semibold text-slate-800 border-b pb-2">
             Results
           </h2>
 
+          {/* Annotated frame preview */}
           <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 rounded-lg border border-slate-200 overflow-hidden relative min-h-[300px]">
-            {result?.annotated_image_base64 ? (
+            {result?.annotated_frame_base64 ? (
               <img
-                src={`data:image/jpeg;base64,${result.annotated_image_base64}`}
-                alt="Detection result"
+                src={`data:image/jpeg;base64,${result.annotated_frame_base64}`}
+                alt="Most-detected frame"
                 className="max-h-full max-w-full object-contain"
               />
             ) : preview ? (
-              <img
+              <video
                 src={preview}
-                alt="Upload preview"
+                controls
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
-              <span className="text-slate-400">
-                Image preview will appear here
-              </span>
+              <span className="text-slate-400">Video preview will appear here</span>
             )}
           </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              {error}
+            </div>
+          )}
 
           {result && (
             <div className="space-y-3">
               {/* Model used */}
               {result.model && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-sm">
-                  <span className="font-semibold text-blue-900">Model:</span>{' '}
-                  <span className="text-blue-800">
+                <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-sm">
+                  <span className="font-semibold text-indigo-900">Model:</span>{' '}
+                  <span className="text-indigo-800">
                     {result.model.name} v{result.model.version}
+                  </span>
+                  <span className="ml-2 text-indigo-600 text-xs uppercase">
+                    [{result.model.category}]
                   </span>
                 </div>
               )}
 
-              {/* Detection summary */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              {/* Summary */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 space-y-2">
                 <h3 className="font-semibold text-blue-900">Detection Summary</h3>
-                <p className="text-blue-800 mt-1">
-                  Objects Detected:{' '}
-                  <strong>{result.object_count}</strong>
-                </p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-blue-700 mt-2">
-                  <span>
+                <div className="grid grid-cols-2 gap-2 text-sm text-blue-800">
+                  <div>
+                    Frames processed: <strong>{result.total_frames_processed}</strong>
+                  </div>
+                  <div>
+                    Frames w/ detections: <strong>{result.frames_with_detections}</strong>
+                  </div>
+                  <div>
+                    Total objects: <strong>{result.total_object_detections}</strong>
+                  </div>
+                  <div>
                     Inference: <strong>{result.processing_time}s</strong>
-                  </span>
-                  <span>
-                    Conf. used: <strong>{(result.confidence_used * 100).toFixed(0)}%</strong>
-                  </span>
-                  <span>
-                    IoU used: <strong>{(result.iou_used * 100).toFixed(0)}%</strong>
-                  </span>
+                  </div>
                 </div>
-                {result.detections?.length > 0 && (
-                  <div className="mt-2 text-sm text-blue-800 max-h-32 overflow-y-auto">
-                    <ul className="list-disc pl-5">
-                      {result.detections.map((det, i) => (
-                        <li key={i}>
-                          {det.class_name} (
-                          {(det.confidence * 100).toFixed(1)}%)
-                        </li>
+
+                {result.top_classes?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold text-blue-700 mb-1">
+                      Top detected classes:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {result.top_classes.map((item, i) => (
+                        <span
+                          key={i}
+                          className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full"
+                        >
+                          {item.class_name}{' '}
+                          <strong>{item.count}</strong>
+                        </span>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
@@ -299,4 +278,4 @@ const ManualDetection = () => {
   );
 };
 
-export default ManualDetection;
+export default VideoDetectionPage;
