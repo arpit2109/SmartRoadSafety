@@ -58,10 +58,14 @@ class ProfileInputSerializer(serializers.ModelSerializer):
 
 class ProfileOutputSerializer(serializers.ModelSerializer):
     profile_picture = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
+    date_joined = serializers.DateTimeField(source='user.date_joined', read_only=True)
 
     class Meta:
         model = Profile
-        fields = ("id", "firstname", "lastname", "profile_picture")
+        fields = ("id", "firstname", "lastname", "profile_picture", "username", "email", "is_staff", "date_joined")
 
     def get_profile_picture(self, obj):
         if obj.profile_picture:

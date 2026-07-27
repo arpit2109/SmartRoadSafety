@@ -23,6 +23,8 @@ from .serializers import (
     AIModelUpdateSerializer,
     AIModelUploadSerializer,
     CategoryStatSerializer,
+    DashboardStatsSerializer,
+    ModelDropdownSerializer,
 )
 
 
@@ -43,6 +45,7 @@ class AIModelViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in {
             "list", "retrieve", "categories", "cache_stats",
+            "dashboard_stats", "dropdown",
         }:
             return [IsAuthenticated()]
         return [IsAdminUser()]
@@ -222,6 +225,52 @@ class AIModelViewSet(viewsets.ModelViewSet):
     def cache_clear(self, request):
         cache.clear()
         return Response(cache.stats())
+
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated],
+        url_path="dashboard-stats",
+    )
+    def dashboard_stats(self, request):
+        """
+        GET /api/models/dashboard-stats/ — high-level counts and
+        aggregates for the admin/overview dashboard.
+        Uses DB aggregation; never iterates querysets in Python.
+        """
+        from django.db.models import Avg, Count
+
+        qs = AIModel.objects.filter(is_active=True)
+        agg = qs.aggregate(
+            active_models=Count("id"),
+            average_confidence=Avg("default_confidence"),
+        )
+        avg = agg["average_confidence"]
+        # Confidence is stored as 0-1; convert to percentage rounded to 2 dp.
+        average_confidence = round(avg * 100, 2) if avg is not None else 0.0
+        payload = {
+            "active_models": agg["active_models"] or 0,
+            "average_confidence": average_confidence,
+        }
+        return Response(DashboardStatsSerializer(payload).data)
+
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated],
+        url_path="dropdown",
+    )
+    def dropdown(self, request):
+        """
+        GET /api/models/dropdown/ — minimal payload for the React
+        model-selector dropdown. Only active models; default model first,
+        then alphabetical. Never exposes file paths or internal metadata.
+        """
+        qs = (
+            AIModel.objects.filter(is_active=True)
+            .order_by("-is_default", "name", "version")
+        )
+        return Response(ModelDropdownSerializer(qs, many=True).data)
 
 
 # ---------------------------------------------------------------------------

@@ -217,3 +217,26 @@ class CategoryStatSerializer(serializers.Serializer):
     count = serializers.IntegerField()
     active_count = serializers.IntegerField()
     has_default = serializers.BooleanField()
+
+
+# ---------------------------------------------------------------------------
+# Dashboard stats
+# ---------------------------------------------------------------------------
+
+
+class DashboardStatsSerializer(serializers.Serializer):
+    active_models = serializers.IntegerField()
+    average_confidence = serializers.FloatField()
+
+
+# ---------------------------------------------------------------------------
+# Dropdown endpoint payload
+# ---------------------------------------------------------------------------
+
+
+class ModelDropdownSerializer(serializers.ModelSerializer):
+    """Minimal payload for the React model selector dropdown."""
+
+    class Meta:
+        model = AIModel
+        fields = ("id", "name", "version", "category", "is_default")

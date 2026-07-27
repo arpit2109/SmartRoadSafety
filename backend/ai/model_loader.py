@@ -81,6 +81,34 @@ def load_model(name: str, category: Optional[str] = None):
     return _load_from_disk(ai_model)
 
 
+def load_model_by_id(pk: int):
+    """
+    Load and return the cached YOLO instance for the AIModel with the
+    given primary key.  Raises ModelNotFound if the row doesn't exist
+    or is inactive.
+    """
+    ai_model = _get_ai_model_by_id(pk)
+    return _load_from_disk(ai_model)
+
+
+def get_ai_model_by_id(pk: int):
+    """
+    Return the AIModel row (not the YOLO object) for the given pk.
+    Raises ModelNotFound if the row doesn't exist or is inactive.
+    """
+    return _get_ai_model_by_id(pk)
+
+
+def _get_ai_model_by_id(pk: int):
+    """Internal helper — actual DB fetch."""
+    from .models import AIModel
+
+    try:
+        return AIModel.objects.get(pk=pk, is_active=True)
+    except AIModel.DoesNotExist:
+        raise ModelNotFound(f"id={pk}")
+
+
 def load_default(category: Optional[str] = None):
     """
     Load and return the active default model, optionally for a specific

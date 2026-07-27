@@ -19,9 +19,7 @@ class Command(BaseCommand):
         content = response.content
 
         categories = [
-            ("Vehicle Detector", AIModel.Category.VEHICLE),
-            ("Helmet Detector", AIModel.Category.HELMET),
-            ("Bike Detector", AIModel.Category.BIKE)
+            ("Vehicle & Person Detector", AIModel.Category.VEHICLE)
         ]
 
         for name, category in categories:
