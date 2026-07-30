@@ -19,7 +19,7 @@ import { useAuth } from '../context/AuthContext';
 // ---------------------------------------------------------------------------
 
 const PAGE_TITLES = {
-  '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
   '/detect/manual': 'Manual Detection',
   '/detect/auto': 'Auto Detection',
   '/detect/video': 'Video Detection',
@@ -88,7 +88,7 @@ const Layout = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
-          <NavLink to="/" icon={LayoutDashboard} label="Dashboard" />
+          <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavLink to="/detect/manual" icon={ScanSearch} label="Manual Detection" />
           <NavLink to="/detect/auto" icon={Sparkles} label="Auto Detection" />
           <NavLink to="/detect/video" icon={Video} label="Video Detection" />

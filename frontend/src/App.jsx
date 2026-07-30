@@ -16,22 +16,22 @@ import ModelUploadPage from './pages/ModelUploadPage';
 const App = () => (
   <Router>
     <Routes>
-      {/* Public */}
+      {/* Public — landing page is Auto Detection (no auth) */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/detect/auto" element={<AutoDetectionPage />} />
+      <Route path="/" element={<AutoDetectionPage />} />
 
       {/* Protected — wrapped in Layout, guarded by auth */}
       <Route
-        path="/"
         element={
           <ProtectedRoute>
             <Layout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="detect/manual" element={<ManualDetection />} />
-        <Route path="detect/auto" element={<AutoDetectionPage />} />
         <Route path="detect/video" element={<VideoDetectionPage />} />
         <Route path="detect/webcam" element={<WebcamDetectionPage />} />
         <Route path="profile" element={<ProfilePage />} />

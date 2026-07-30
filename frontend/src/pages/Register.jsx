@@ -81,7 +81,7 @@ const Register = () => {
 
       // Auto-login after successful registration
       await login(form.username, form.password);
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       // Field-level errors from DRF serializer (e.g. contact_no validation)
       if (err.response?.data && typeof err.response.data === 'object') {

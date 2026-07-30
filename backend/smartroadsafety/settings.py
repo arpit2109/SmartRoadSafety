@@ -37,6 +37,7 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',   # must be before django.contrib.staticfiles for runserver auto-detect
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     "rest_framework",
     'rest_framework_simplejwt.token_blacklist',
     "corsheaders",
+    "channels",   # WebSocket support for live video detection preview
 
     "accounts",
     "detection",
@@ -90,6 +92,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'smartroadsafety.wsgi.application'
+ASGI_APPLICATION = 'smartroadsafety.asgi.application'
+
+# Channels layer — InMemory for dev (single-process). For production, swap to Redis.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
 
 
 # Database

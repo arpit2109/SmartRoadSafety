@@ -150,7 +150,7 @@ const ModelManagementPage = () => {
         <p className="text-sm text-slate-500 mt-2 max-w-sm">
           Model management is only available to administrators. Contact your admin to grant access.
         </p>
-        <Link to="/" className="mt-6 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+        <Link to="/dashboard" className="mt-6 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
           Back to Dashboard
         </Link>
       </div>

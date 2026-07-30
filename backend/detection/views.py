@@ -16,7 +16,7 @@ from rest_framework import status, viewsets
 logger = logging.getLogger(__name__)
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -131,9 +131,12 @@ class AutoDetectionView(APIView):
     Automatically selects the best model by running a quick low-confidence
     sweep across all active cached models and picking the one with the most
     detections.
+
+    Public — anonymous users can run auto detection from the landing page.
+    For anonymous users the result is NOT saved to history.
     """
     parser_classes = [MultiPartParser]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         if "image" not in request.FILES:
@@ -205,30 +208,34 @@ class AutoDetectionView(APIView):
             f.write(buffer.tobytes())
         result_file_url = f"{settings.MEDIA_URL.rstrip('/')}/{relative.as_posix()}"
 
-        # Create detection record
-        record = DetectionRecord.objects.create(
-            user=request.user,
-            uploaded_file=image_file,
-            ai_model=ai_model,
-            detection_mode=DetectionRecord.DetectionMode.AUTO,
-            confidence_used=ai_model.default_confidence,
-            iou_used=ai_model.default_iou,
-            detections=raw["detections"],
-            object_count=raw["object_count"],
-            inference_time_ms=elapsed_ms,
-        )
+        # Create detection record — only when authenticated
+        is_authed = bool(getattr(request.user, "is_authenticated", False))
+        record = None
+        if is_authed:
+            record = DetectionRecord.objects.create(
+                user=request.user,
+                uploaded_file=image_file,
+                ai_model=ai_model,
+                detection_mode=DetectionRecord.DetectionMode.AUTO,
+                confidence_used=ai_model.default_confidence,
+                iou_used=ai_model.default_iou,
+                detections=raw["detections"],
+                object_count=raw["object_count"],
+                inference_time_ms=elapsed_ms,
+            )
 
         logger.info(
-            "AutoDetection: selected=%s objects=%d time=%.1fms record=%d",
+            "AutoDetection: selected=%s objects=%d time=%.1fms record=%s",
             ai_model.name,
             raw["object_count"],
             elapsed_ms,
-            record.pk,
+            record.pk if record else "anonymous",
         )
 
         return Response(
             {
-                "id": record.pk,
+                "id": record.pk if record else None,
+                "saved_to_history": record is not None,
                 "selected_model": {
                     "id": ai_model.pk,
                     "name": ai_model.name,
@@ -480,6 +487,104 @@ class VideoDetectionView(APIView):
                 os.unlink(tmp_path)
             except OSError:
                 pass
+
+
+# ---------------------------------------------------------------------------
+# Live video streaming endpoint (WebSocket-driven)
+# ---------------------------------------------------------------------------
+
+
+class VideoDetectionStreamView(APIView):
+    """
+    POST /api/detection/video-stream/
+
+    Accepts multipart/form-data:
+        video     — the video file (required; .mp4/.avi/.mov/.mkv/.wmv)
+        model_id  — primary key of the AIModel to use (required)
+
+    Saves the video to disk, creates a session, spawns a background thread
+    to process it, and returns a ``session_id`` immediately. The client then
+    connects to ``ws://<host>/ws/detection/video/<session_id>/`` to receive
+    per-frame detection results as JSON.
+    """
+    parser_classes = [MultiPartParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        import threading
+        from pathlib import Path
+        from django.conf import settings
+
+        from .session_store import create_session
+        from .video_processor import process_video_background
+
+        if "video" not in request.FILES:
+            return Response(
+                {"error": "No video file uploaded."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        model_id = request.data.get("model_id")
+        if not model_id:
+            return Response(
+                {"error": "model_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            model_id = int(model_id)
+        except (TypeError, ValueError):
+            return Response(
+                {"error": "model_id must be an integer."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        video_file = request.FILES["video"]
+        ext = "." + video_file.name.rsplit(".", 1)[-1].lower()
+        if ext not in {".mp4", ".avi", ".mov", ".mkv", ".wmv"}:
+            return Response(
+                {"error": f"Unsupported video format '{ext}'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Save uploaded video to media/videos/stream/<user>/
+        user_folder = f"user_{request.user.pk}"
+        media_root = Path(settings.MEDIA_ROOT)
+        dest_dir = media_root / "videos" / "stream" / user_folder
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        import uuid as _uuid
+        uid = _uuid.uuid4().hex[:12]
+        dest_path = dest_dir / f"{uid}{ext}"
+
+        with open(dest_path, "wb") as f:
+            for chunk in video_file.chunks():
+                f.write(chunk)
+
+        # Register session
+        session = create_session(
+            user_id=request.user.pk,
+            model_id=model_id,
+            video_path=dest_path,
+        )
+
+        # Start background processing
+        thread = threading.Thread(
+            target=process_video_background,
+            args=(session.session_id, request.user.pk, model_id, dest_path),
+            daemon=True,
+        )
+        thread.start()
+
+        return Response(
+            {
+                "session_id": session.session_id,
+                "websocket_url": f"/ws/detection/video/{session.session_id}/",
+                "video_url": request.build_absolute_uri(
+                    f"{settings.MEDIA_URL}videos/stream/{user_folder}/{uid}{ext}"
+                ),
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 # ---------------------------------------------------------------------------

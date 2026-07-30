@@ -18,6 +18,7 @@ from .views import (
     DetectionRecordViewSet,
     ImageDetectionView,
     VideoDetectionView,
+    VideoDetectionStreamView,
 )
 
 router = DefaultRouter()
@@ -27,5 +28,6 @@ urlpatterns = [
     path("image/", ImageDetectionView.as_view(), name="detect-image"),
     path("auto/", AutoDetectionView.as_view(), name="detect-auto"),
     path("video/", VideoDetectionView.as_view(), name="detect-video"),
+    path("video-stream/", VideoDetectionStreamView.as_view(), name="detect-video-stream"),
     path("", include(router.urls)),
 ]

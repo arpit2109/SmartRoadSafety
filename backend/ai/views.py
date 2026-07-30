@@ -10,7 +10,7 @@ from django.db.models import Count, Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -47,6 +47,10 @@ class AIModelViewSet(viewsets.ModelViewSet):
             "list", "retrieve", "categories", "cache_stats",
             "dashboard_stats", "dropdown",
         }:
+            # Dropdown is public so anonymous users on the landing page can
+            # see available models. All other read endpoints require auth.
+            if self.action == "dropdown":
+                return [AllowAny()]
             return [IsAuthenticated()]
         return [IsAdminUser()]
 
