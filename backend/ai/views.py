@@ -57,7 +57,7 @@ class AIModelViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return AIModelListSerializer
-        if self.action == "create":
+        if self.action in {"create", "upload"}:
             return AIModelUploadSerializer
         if self.action in {"partial_update", "update"}:
             return AIModelUpdateSerializer
@@ -79,7 +79,8 @@ class AIModelViewSet(viewsets.ModelViewSet):
 
     # ----- create -----
 
-    def create(self, request, *args, **kwargs):
+    @action(detail=False, methods=["post"], url_path="upload")
+    def upload(self, request, *args, **kwargs):
         """
         POST /api/models/upload/ — accept multipart upload, persist
         via the services layer, return the detail serializer.
