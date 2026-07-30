@@ -180,7 +180,15 @@ def _build_framework_instance(path: str, weight_format: str):
 
     if fmt in {"pt", "engine"}:
         from ultralytics import YOLO  # heavy import, do it here
-        return YOLO(path)
+        model = YOLO(path)
+        if fmt == "pt":
+            # Force fusion at load time to prevent threading race conditions
+            # during the first inference when auto-fusion usually occurs.
+            try:
+                model.fuse()
+            except Exception as e:
+                logger.warning(f"Could not manually fuse model: {e}")
+        return model
 
     if fmt == "onnx":
         # ONNX Runtime path — only available if the package is installed.

@@ -1,15 +1,21 @@
 """
-WebSocket consumer for live webcam detection - low-latency rebuild.
+WebSocket consumer for live webcam detection.
 
-Key changes vs v1
------------------
-- Pipeline gate: incoming frames are dropped (not queued) when inference is
-  already running. This prevents the latency spiral of stale frames piling up.
-- asyncio.ensure_future: inference fires as a non-blocking background task so
-  the receive loop is always free to accept the next message immediately.
-- Running average: avg_inference_ms is tracked across the session and sent with
-  every boxes response.
-- Decode + infer happen together in one thread-pool call (fewer round-trips).
+The browser opens a webcam via getUserMedia, captures frames into a canvas,
+encodes them as JPEG, and sends them as binary messages over the WebSocket.
+The server decodes each frame, runs YOLO inference, and sends back a JSON
+message with the bounding boxes. Boxes are drawn on a <canvas> overlay on
+top of the live <video> element.
+
+Protocol
+--------
+Client → Server (binary): raw JPEG bytes from canvas.toBlob()
+Client → Server (JSON):   {"type": "config", "model_id": <int>}
+Client → Server (JSON):   {"type": "ping"}
+
+Server → Client (JSON):   {"type": "ready"}
+Server → Client (JSON):   {"type": "boxes", "boxes": [...], "inference_time_ms": N, "frame_seq": M}
+Server → Client (JSON):   {"type": "error", "message": "..."}
 """
 from __future__ import annotations
 
@@ -20,17 +26,23 @@ import time
 
 import cv2
 import numpy as np
-from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer, AsyncWebsocketConsumer
 
 logger = logging.getLogger(__name__)
 
 
 class WebcamDetectionConsumer(AsyncWebsocketConsumer):
+    """
+    Stateful consumer: keeps the loaded YOLO detector on the connection so
+    we don't reload the model on every frame. Reacts to ``config`` messages
+    to swap the active model without reconnecting.
+    """
 
-    async def send_json(self, content: dict) -> None:
+    async def send_json(self, content):
         await self.send(text_data=json.dumps(content))
 
     async def connect(self):
+        # Authenticate via JWT in query string: ?token=<jwt>
         from django.contrib.auth.models import AnonymousUser
         from urllib.parse import parse_qs
         from channels.db import database_sync_to_async
@@ -61,36 +73,30 @@ class WebcamDetectionConsumer(AsyncWebsocketConsumer):
             return
 
         self.user = user
-        self.detector = None
-        self.ai_model = None
-        self._inferring = False
-        self._dropped = 0
+        self.detector = None   # YOLODetector instance (loaded lazily on first config)
+        self.ai_model = None   # AIModel row
         self.frame_seq = 0
-        self._total_inference_ms = 0.0
-        self._frames_inferred = 0
+        self.last_send = 0.0
+        self._dropped = 0      # frames skipped because previous inference still running
 
         await self.accept()
         await self.send_json({
             "type": "ready",
-            "message": "Connected. Send {type: config, model_id: N} to start.",
+            "message": "Webcam stream connected. Send {type: 'config', model_id: N} to start.",
         })
         logger.info("Webcam WS connected: user=%s", user)
 
     async def disconnect(self, close_code):
-        avg = (
-            self._total_inference_ms / self._frames_inferred
-            if getattr(self, "_frames_inferred", 0) > 0 else 0.0
-        )
-        logger.info(
-            "Webcam WS disconnected: user=%s code=%s dropped=%d avg_ms=%.1f",
-            getattr(self, "user", "?"), close_code,
-            getattr(self, "_dropped", 0), avg,
-        )
+        logger.info("Webcam WS disconnected: user=%s code=%s",
+                    getattr(self, "user", "?"), close_code)
 
     async def receive(self, text_data=None, bytes_data=None):
+        # ── Binary frame path ──────────────────────────────────────────
         if bytes_data is not None:
             await self._handle_frame(bytes_data)
             return
+
+        # ── JSON control path ──────────────────────────────────────────
         if text_data is None:
             return
         try:
@@ -119,8 +125,11 @@ class WebcamDetectionConsumer(AsyncWebsocketConsumer):
             return
 
         from ai.model_loader import (
-            get_ai_model_by_id, load_model_by_id,
-            ModelFileMissing, ModelLoadError, ModelNotFound,
+            get_ai_model_by_id,
+            load_model_by_id,
+            ModelFileMissing,
+            ModelLoadError,
+            ModelNotFound,
         )
         from ai.detector import YOLODetector
         from asgiref.sync import sync_to_async
@@ -137,11 +146,6 @@ class WebcamDetectionConsumer(AsyncWebsocketConsumer):
 
         self.ai_model = ai_model
         self.detector = YOLODetector(yolo)
-        self._total_inference_ms = 0.0
-        self._frames_inferred = 0
-        self._dropped = 0
-        self.frame_seq = 0
-
         await self.send_json({
             "type": "configured",
             "model": {
@@ -156,66 +160,62 @@ class WebcamDetectionConsumer(AsyncWebsocketConsumer):
 
     async def _handle_frame(self, jpeg_bytes: bytes):
         if self.detector is None or self.ai_model is None:
+            # Drop silently — client should send "config" first
             return
-        if self._inferring:
-            self._dropped += 1
-            logger.debug("Frame dropped (busy), total dropped=%d", self._dropped)
-            return
-        self._inferring = True
-        asyncio.ensure_future(self._run_inference_and_reply(jpeg_bytes))
 
-    async def _run_inference_and_reply(self, jpeg_bytes: bytes):
+        # Decode JPEG
+        nparr = np.frombuffer(jpeg_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None:
+            await self.send_json({"type": "error", "message": "Could not decode frame."})
+            return
+
+        # Inference (run in threadpool so we don't block the event loop)
+        from channels.db import database_sync_to_async
+        from functools import partial
+        from concurrent.futures import ThreadPoolExecutor
+
+        loop = asyncio.get_event_loop()
+        # Use a small executor for inference; one per connection is fine
+        executor = getattr(self, "_executor", None)
+        if executor is None:
+            executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ws-yolo")
+            self._executor = executor
+
+        start = time.perf_counter()
         try:
-            loop = asyncio.get_event_loop()
-            detector = self.detector
-            ai_model = self.ai_model
-
-            def _sync_infer():
-                nparr = np.frombuffer(jpeg_bytes, np.uint8)
-                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                if frame is None:
-                    return None, 0.0
-                t0 = time.perf_counter()
-                result = detector.run_inference(
-                    frame,
-                    ai_model.default_confidence,
-                    ai_model.default_iou,
-                )
-                return result, (time.perf_counter() - t0) * 1000.0
-
-            result, elapsed_ms = await loop.run_in_executor(None, _sync_infer)
-
-            if result is None:
-                await self.send_json({"type": "error", "message": "Could not decode frame."})
-                return
-
-            self.frame_seq += 1
-            self._frames_inferred += 1
-            self._total_inference_ms += elapsed_ms
-            avg_ms = self._total_inference_ms / self._frames_inferred
-
-            boxes = [
-                {
-                    "x1": round(d["bbox"][0], 2), "y1": round(d["bbox"][1], 2),
-                    "x2": round(d["bbox"][2], 2), "y2": round(d["bbox"][3], 2),
-                    "class_name": d["class_name"],
-                    "confidence": round(d["confidence"], 4),
-                }
-                for d in (result.get("detections") or [])
-            ]
-
-            await self.send_json({
-                "type": "boxes",
-                "boxes": boxes,
-                "object_count": len(boxes),
-                "inference_time_ms": round(elapsed_ms, 2),
-                "avg_inference_ms": round(avg_ms, 2),
-                "frame_seq": self.frame_seq,
-                "dropped_frames": self._dropped,
-            })
-
+            result = await loop.run_in_executor(
+                executor,
+                self.detector.run_inference,
+                frame,
+                self.ai_model.default_confidence,
+                self.ai_model.default_iou,
+            )
         except Exception as exc:
             logger.exception("Inference failed in webcam consumer")
             await self.send_json({"type": "error", "message": f"Inference failed: {exc}"})
-        finally:
-            self._inferring = False
+            return
+
+        elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
+        self.frame_seq += 1
+
+        # Slim payload — coordinates are in the original frame's pixel space
+        boxes = [
+            {
+                "x1": round(d["x1"], 2),
+                "y1": round(d["y1"], 2),
+                "x2": round(d["x2"], 2),
+                "y2": round(d["y2"], 2),
+                "class_name": d["class_name"],
+                "confidence": round(d["confidence"], 4),
+            }
+            for d in (result.get("detections") or [])
+        ]
+
+        await self.send_json({
+            "type": "boxes",
+            "boxes": boxes,
+            "object_count": len(boxes),
+            "inference_time_ms": elapsed_ms,
+            "frame_seq": self.frame_seq,
+        })

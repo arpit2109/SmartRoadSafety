@@ -570,7 +570,7 @@ class VideoDetectionStreamView(APIView):
         # Start background processing
         thread = threading.Thread(
             target=process_video_background,
-            args=(session.session_id, request.user.pk, model_id, dest_path),
+            args=(session.session_id, request.user.pk, model_id, dest_path, session.stop_event),
             daemon=True,
         )
         thread.start()

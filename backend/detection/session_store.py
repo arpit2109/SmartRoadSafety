@@ -1,11 +1,7 @@
 """
 In-process session store for live video detection.
 
-Maps ``session_id`` → metadata. The session is created when a video file is
-uploaded, and removed when processing finishes (or expires after TTL).
-
-This is a single-process implementation. For production multi-worker
-deployments, replace with a Redis-backed store.
+Single-process implementation. For multi-worker production, use Redis.
 """
 from __future__ import annotations
 
@@ -15,7 +11,6 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
-
 
 _TTL_SECONDS = 60 * 60  # 1 hour
 _lock = threading.Lock()
@@ -28,6 +23,7 @@ class VideoSession:
     user_id: int
     model_id: int
     video_path: Path
+    stop_event: threading.Event = field(default_factory=threading.Event)
     created_at: float = field(default_factory=time.time)
     finished: bool = False
 
@@ -36,7 +32,6 @@ class VideoSession:
 
 
 def create_session(user_id: int, model_id: int, video_path: Path) -> VideoSession:
-    """Register a new session. Returns the session object."""
     sid = uuid.uuid4().hex[:16]
     session = VideoSession(
         session_id=sid, user_id=user_id, model_id=model_id, video_path=video_path
@@ -61,6 +56,14 @@ def mark_finished(session_id: str) -> None:
         s = _sessions.get(session_id)
         if s:
             s.finished = True
+
+
+def stop_session(session_id: str) -> None:
+    """Signal the background thread to abort processing."""
+    with _lock:
+        s = _sessions.get(session_id)
+        if s:
+            s.stop_event.set()
 
 
 def remove_session(session_id: str) -> None:
