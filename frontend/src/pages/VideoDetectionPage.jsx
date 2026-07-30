@@ -2,41 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Video, AlertCircle, Wifi, WifiOff, Clock, Activity } from 'lucide-react';
 import api from '../services/api';
 
-/**
- * VideoDetectionPage — rebuilt for lower latency.
- *
- * Key changes
- * -----------
- * - FRAME_SAMPLE_RATE on the server is now 3 (every 3rd frame) vs 10.
- * - Progress bar driven by the "progress" field in each frame message.
- * - avg_inference_ms shown in the stats bar.
- * - Box lookup uses a timestamp map keyed by timestamp_ms for O(1) access.
- * - Separate RAF draw loop syncs box overlay to video.currentTime continuously.
- */
+const SEND_WIDTH = 640;
+const SEND_INTERVAL_MS = 80;
 
 const PALETTE = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'];
 const classColor = (cls) => {
   let h = 0;
   for (let i = 0; i < cls.length; i++) h = (h * 31 + cls.charCodeAt(i)) | 0;
   return PALETTE[Math.abs(h) % PALETTE.length];
-};
-
-const drawBoxes = (ctx, boxes, W, H) => {
-  ctx.clearRect(0, 0, W, H);
-  for (const box of boxes) {
-    const x = box.x1, y = box.y1, w = box.x2 - box.x1, h = box.y2 - box.y1;
-    const color = classColor(box.class_name);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(x, y, w, h);
-    const label = `${box.class_name} ${(box.confidence * 100).toFixed(0)}%`;
-    ctx.font = 'bold 13px Inter,system-ui,sans-serif';
-    const tw = ctx.measureText(label).width;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, Math.max(0, y - 21), tw + 10, 21);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(label, x + 5, Math.max(15, y - 5));
-  }
 };
 
 const StatBadge = ({ label, value, unit = '', color = 'text-slate-700' }) => (
@@ -54,6 +27,9 @@ const VideoDetectionPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [modelsLoading, setModelsLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('idle'); // idle | uploading | success | error
+  const [sessionData, setSessionData] = useState(null);
 
   const [videoUrl, setVideoUrl] = useState(null);
   const [wsStatus, setWsStatus] = useState('idle');
@@ -64,18 +40,18 @@ const VideoDetectionPage = () => {
   const [avgInferenceMs, setAvgInferenceMs] = useState(0);
   const [progress, setProgress] = useState(0);
   const [fpsIn, setFpsIn] = useState(0);
+  const [fpsOut, setFpsOut] = useState(0);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const captureCanvasRef = useRef(null);
   const wsRef = useRef(null);
-  // Map of timestamp_ms -> {boxes, object_count}
-  const framesRef = useRef(new Map());
-  // Sorted list of timestamp keys for binary-search lookup
-  const tsKeysRef = useRef([]);
+  const lastBoxesRef = useRef([]);
   const rafRef = useRef(null);
-  const fpsRef = useRef({ count: 0, last: Date.now() });
+  const sendIntervalRef = useRef(null);
+  const runningRef = useRef(false);
+  const fpsRef = useRef({ in: 0, out: 0, lastIn: Date.now(), lastOut: Date.now() });
 
-  // Fetch models
   useEffect(() => {
     api.get('/api/ai/models/dropdown/')
       .then(res => {
@@ -86,49 +62,20 @@ const VideoDetectionPage = () => {
       .finally(() => setModelsLoading(false));
   }, []);
 
-  // Cleanup WS on unmount
-  useEffect(() => () => { if (wsRef.current) wsRef.current.close(); }, []);
+  const stopAll = useCallback(() => {
+    runningRef.current = false;
+    if (sendIntervalRef.current) { clearInterval(sendIntervalRef.current); sendIntervalRef.current = null; }
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (wsRef.current) { try { wsRef.current.close(); } catch {} wsRef.current = null; }
+    if (videoRef.current) { videoRef.current.pause(); }
+    setWsStatus('idle');
+    lastBoxesRef.current = [];
+  }, []);
 
-  // ── Canvas draw loop — syncs boxes to video.currentTime ────────────
-  useEffect(() => {
-    if (!videoUrl) return;
-    let rafId;
-    const draw = () => {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (video && canvas) {
-        const W = video.videoWidth;
-        const H = video.videoHeight;
-        if (W && H) {
-          if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
-          const ctx = canvas.getContext('2d');
-          const currentMs = video.currentTime * 1000;
-          const keys = tsKeysRef.current;
-
-          // Binary search for closest frame at or before currentTime
-          let lo = 0, hi = keys.length - 1, best = -1;
-          while (lo <= hi) {
-            const mid = (lo + hi) >> 1;
-            if (keys[mid] <= currentMs) { best = mid; lo = mid + 1; }
-            else hi = mid - 1;
-          }
-
-          if (best >= 0) {
-            const frame = framesRef.current.get(keys[best]);
-            drawBoxes(ctx, frame.boxes, W, H);
-          } else {
-            ctx.clearRect(0, 0, W, H);
-          }
-        }
-      }
-      rafId = requestAnimationFrame(draw);
-    };
-    rafId = requestAnimationFrame(draw);
-    rafRef.current = rafId;
-    return () => cancelAnimationFrame(rafId);
-  }, [videoUrl]);
+  useEffect(() => () => stopAll(), [stopAll]);
 
   const reset = () => {
+    stopAll();
     setVideoUrl(null);
     setComplete(null);
     setStarted(null);
@@ -136,8 +83,11 @@ const VideoDetectionPage = () => {
     setLiveObjectCount(0);
     setLiveInferenceMs(0);
     setAvgInferenceMs(0);
-    framesRef.current.clear();
-    tsKeysRef.current = [];
+    setFpsIn(0);
+    setFpsOut(0);
+    setUploadStatus('idle');
+    setUploadProgress(0);
+    setSessionData(null);
   };
 
   const handleFileChange = (e) => {
@@ -145,9 +95,86 @@ const VideoDetectionPage = () => {
     if (f) { setFile(f); setError(''); reset(); }
   };
 
-  const handleDetect = useCallback(async () => {
+  const startDrawLoop = useCallback(() => {
+    const draw = () => {
+      const video = videoRef.current;
+      const overlay = canvasRef.current;
+      if (!video || !overlay || !runningRef.current) { rafRef.current = null; return; }
+
+      const W = video.videoWidth;
+      const H = video.videoHeight;
+      if (W && H) {
+        if (overlay.width !== W || overlay.height !== H) { overlay.width = W; overlay.height = H; }
+        const ctx = overlay.getContext('2d');
+        ctx.clearRect(0, 0, W, H);
+        const boxes = lastBoxesRef.current;
+        
+        const sw = Math.min(W, SEND_WIDTH);
+        const sh = Math.round(sw * (H / W));
+        const scaleX = W / sw;
+        const scaleY = H / sh;
+
+        for (const box of boxes) {
+          const x = box.x1 * scaleX, y = box.y1 * scaleY, w = (box.x2 - box.x1) * scaleX, h = (box.y2 - box.y1) * scaleY;
+          const color = classColor(box.class_name);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(x, y, w, h);
+          const label = `${box.class_name} ${(box.confidence * 100).toFixed(0)}%`;
+          ctx.font = 'bold 13px Inter,system-ui,sans-serif';
+          const tw = ctx.measureText(label).width;
+          ctx.fillStyle = color;
+          ctx.fillRect(x, Math.max(0, y - 21), tw + 10, 21);
+          ctx.fillStyle = '#fff';
+          ctx.fillText(label, x + 5, Math.max(15, y - 5));
+        }
+      }
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    rafRef.current = requestAnimationFrame(draw);
+  }, []);
+
+  const startSendLoop = useCallback((ws) => {
+    sendIntervalRef.current = setInterval(() => {
+      const video = videoRef.current;
+      const capture = captureCanvasRef.current;
+      if (!video || !capture || !runningRef.current || video.paused || video.ended) return;
+      if (!ws || ws.readyState !== 1) return;
+      
+      const W = video.videoWidth;
+      const H = video.videoHeight;
+      if (!W || !H) return;
+
+      const sw = Math.min(W, SEND_WIDTH);
+      const sh = Math.round(sw * (H / W));
+      if (capture.width !== sw || capture.height !== sh) { capture.width = sw; capture.height = sh; }
+
+      const ctx = capture.getContext('2d');
+      ctx.drawImage(video, 0, 0, sw, sh);
+      
+      capture.toBlob(blob => {
+        if (blob && ws.readyState === 1 && runningRef.current) {
+          ws.send(blob);
+          fpsRef.current.out += 1;
+          const t = Date.now();
+          if (t - fpsRef.current.lastOut >= 1000) {
+            setFpsOut(fpsRef.current.out);
+            fpsRef.current.out = 0;
+            fpsRef.current.lastOut = t;
+          }
+        }
+      }, 'image/jpeg', 0.5);
+      
+      // Update progress
+      if (video.duration) {
+        setProgress((video.currentTime / video.duration) * 100);
+      }
+    }, SEND_INTERVAL_MS);
+  }, []);
+
+  const handleUpload = async () => {
     if (!file || !selectedModelId) return;
-    setLoading(true);
+    setUploadStatus('uploading');
     setError('');
     reset();
 
@@ -156,17 +183,45 @@ const VideoDetectionPage = () => {
     formData.append('model_id', selectedModelId);
 
     try {
+      // 1. Upload video to get session ID
       const res = await api.post('/api/detection/video-stream/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          }
+        }
       });
-      const { websocket_url, video_url } = res.data;
-      setVideoUrl(video_url);
+      
+      setSessionData(res.data);
+      
+      // Use a local object URL to bypass CORS and prevent canvas tainting
+      if (videoUrl && videoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(videoUrl);
+      }
+      setVideoUrl(URL.createObjectURL(file));
+      
+      setUploadStatus('success');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not upload video.');
+      setUploadStatus('error');
+    }
+  };
 
+  const handleStartStream = useCallback(() => {
+    if (!sessionData) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      // 3. Connect WS
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const wsFullUrl = apiBase.replace(/^http/, 'ws').replace(/\/$/, '') + websocket_url;
+      const wsFullUrl = apiBase.replace(/^http/, 'ws').replace(/\/$/, '') + sessionData.websocket_url;
 
       setWsStatus('connecting');
       const ws = new WebSocket(wsFullUrl);
+      ws.binaryType = 'arraybuffer';
       wsRef.current = ws;
 
       ws.onopen = () => setWsStatus('open');
@@ -175,39 +230,35 @@ const VideoDetectionPage = () => {
 
       ws.onmessage = event => {
         const msg = JSON.parse(event.data);
-
-        // FPS counter
-        fpsRef.current.count += 1;
+        
+        fpsRef.current.in += 1;
         const t = Date.now();
-        if (t - fpsRef.current.last >= 1000) {
-          setFpsIn(fpsRef.current.count);
-          fpsRef.current.count = 0;
-          fpsRef.current.last = t;
+        if (t - fpsRef.current.lastIn >= 1000) {
+          setFpsIn(fpsRef.current.in);
+          fpsRef.current.in = 0;
+          fpsRef.current.lastIn = t;
         }
 
-        if (msg.type === 'ready' || msg.type === 'started') {
+        if (msg.type === 'ready') {
           setStarted(msg);
-        } else if (msg.type === 'frame') {
-          // Store frame by timestamp
-          framesRef.current.set(msg.timestamp_ms, { boxes: msg.boxes });
-          // Insert key into sorted array (frames arrive roughly in order)
-          const keys = tsKeysRef.current;
-          if (keys.length === 0 || msg.timestamp_ms > keys[keys.length - 1]) {
-            keys.push(msg.timestamp_ms);
-          } else {
-            // Insert in sorted position (handles rare out-of-order arrivals)
-            let lo = 0, hi = keys.length;
-            while (lo < hi) { const mid = (lo + hi) >> 1; if (keys[mid] < msg.timestamp_ms) lo = mid + 1; else hi = mid; }
-            if (keys[lo] !== msg.timestamp_ms) keys.splice(lo, 0, msg.timestamp_ms);
+          runningRef.current = true;
+          startDrawLoop();
+          startSendLoop(ws);
+          if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().catch(e => setError('Autoplay blocked. Please click play on the video.'));
           }
+        } else if (msg.type === 'frame') {
+          lastBoxesRef.current = msg.boxes;
           setLiveObjectCount(msg.object_count);
           setLiveInferenceMs(msg.inference_time_ms);
           setAvgInferenceMs(msg.avg_inference_ms);
-          setProgress(msg.progress || 0);
         } else if (msg.type === 'complete') {
           setComplete(msg);
           setWsStatus('closed');
           setProgress(100);
+          runningRef.current = false;
+          if (sendIntervalRef.current) { clearInterval(sendIntervalRef.current); sendIntervalRef.current = null; }
           if (msg.avg_inference_ms) setAvgInferenceMs(msg.avg_inference_ms);
         } else if (msg.type === 'error') {
           setError(msg.message);
@@ -215,14 +266,20 @@ const VideoDetectionPage = () => {
         }
       };
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not start video processing.');
+      setError('Could not start live stream.');
     } finally {
       setLoading(false);
     }
-  }, [file, selectedModelId]);
+  }, [sessionData, startDrawLoop, startSendLoop]);
+
+  const handleVideoEnded = () => {
+    if (wsRef.current && wsRef.current.readyState === 1) {
+      wsRef.current.send(JSON.stringify({ type: 'stop' }));
+    }
+  };
 
   const canDetect = Boolean(file && selectedModelId && !loading && !modelsLoading);
-  const isLive = wsStatus === 'open';
+  const isLive = wsStatus === 'open' && !complete;
 
   return (
     <div className="space-y-5">
@@ -232,7 +289,7 @@ const VideoDetectionPage = () => {
           Video Detection (Live Preview)
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Bounding boxes streamed via WebSocket — server analyzes every 3rd frame.
+          Bounding boxes streamed via WebSocket — client extracts frames.
         </p>
       </div>
 
@@ -272,16 +329,39 @@ const VideoDetectionPage = () => {
             {file && <p className="text-xs text-slate-500 mt-1.5 truncate">Selected: {file.name}</p>}
           </div>
 
-          <button id="btn-start-detection" onClick={handleDetect} disabled={!canDetect}
-            className={`w-full py-2.5 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2 ${
-              !canDetect ? 'bg-slate-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md'
-            }`}>
-            {loading ? (
-              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Starting…</>
-            ) : (
-              <><Video size={16} /> Start Live Detection</>
-            )}
-          </button>
+          {uploadStatus === 'idle' || uploadStatus === 'error' ? (
+            <button id="btn-upload-video" onClick={handleUpload} disabled={!canDetect}
+              className={`w-full py-2.5 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2 ${
+                !canDetect ? 'bg-slate-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md'
+              }`}>
+              <Video size={16} /> Upload Video
+            </button>
+          ) : uploadStatus === 'uploading' ? (
+            <div className="w-full space-y-2">
+              <div className="flex justify-between text-xs text-slate-500 font-medium">
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-indigo-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            </div>
+          ) : uploadStatus === 'success' && !started ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">✓</div>
+                <span className="text-sm font-medium">Upload successful!</span>
+              </div>
+              <button id="btn-start-detection" onClick={handleStartStream} disabled={loading}
+                className="w-full py-2.5 rounded-lg text-white font-medium bg-emerald-600 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm">
+                {loading ? (
+                  <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Starting Stream…</>
+                ) : (
+                  <><Video size={16} /> Start Live Detection</>
+                )}
+              </button>
+            </div>
+          ) : null}
 
           {error && (
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2.5 rounded-lg text-sm">
@@ -314,11 +394,12 @@ const VideoDetectionPage = () => {
           )}
 
           {/* Video + overlay */}
-          <div className="relative bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center flex-1" style={{ minHeight: 240 }}>
+          <div className="relative bg-slate-900 rounded-lg overflow-hidden flex flex-col items-center justify-center flex-1 shadow-inner" style={{ minHeight: 320 }}>
             {videoUrl ? (
               <>
-                <video ref={videoRef} src={videoUrl} controls autoPlay muted
-                  className="max-h-[400px] w-auto object-contain"
+                <video ref={videoRef} src={videoUrl} controls muted playsInline
+                  onEnded={handleVideoEnded}
+                  className="w-full h-full object-contain max-h-[520px]"
                   onLoadedMetadata={() => {
                     if (videoRef.current && canvasRef.current) {
                       canvasRef.current.width = videoRef.current.videoWidth;
@@ -328,6 +409,7 @@ const VideoDetectionPage = () => {
                 <canvas ref={canvasRef}
                   className="absolute top-0 left-0 w-full h-full pointer-events-none"
                   style={{ objectFit: 'contain' }} />
+                <canvas ref={captureCanvasRef} className="hidden" />
               </>
             ) : (
               <span className="text-slate-500 text-sm py-12">Upload and start to see live preview</span>
@@ -341,6 +423,7 @@ const VideoDetectionPage = () => {
               <StatBadge label="Inference" value={liveInferenceMs} unit="ms" color="text-amber-600" />
               <StatBadge label="Avg Inference" value={avgInferenceMs} unit="ms" color="text-orange-500" />
               <StatBadge label="FPS in" value={fpsIn} color="text-emerald-600" />
+              <StatBadge label="FPS out" value={fpsOut} color="text-blue-600" />
             </div>
           )}
 
@@ -349,7 +432,7 @@ const VideoDetectionPage = () => {
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2">
               <p className="font-semibold text-emerald-800 text-sm">Processing complete</p>
               <div className="grid grid-cols-2 gap-1 text-sm text-emerald-700">
-                <div>Total frames: <strong>{complete.total_frames_processed}</strong></div>
+                <div>Total frames sent: <strong>{complete.total_frames_processed}</strong></div>
                 <div>Frames w/ detections: <strong>{complete.frames_with_detections}</strong></div>
                 <div>Total objects: <strong>{complete.total_object_detections}</strong></div>
                 <div>Elapsed: <strong>{complete.elapsed}s</strong></div>
