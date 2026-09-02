@@ -30,10 +30,9 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-l#qn7zp5#x^i%ptrdxz0_i5ta5
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
-ALLOWED_HOSTS = os.getenv(
-    'ALLOWED_HOSTS',
-    os.getenv('RENDER_EXTERNAL_HOSTNAME', 'localhost')
-).split(',')
+ALLOWED_HOSTS = [
+    "smartroadsafety-1.onrender.com",
+]
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 
@@ -84,9 +83,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 # ]
 
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
-    if origin.strip()
+    "https://smartroadsafety-1.onrender.com",
+    "https://smart-road-safety-9zei4guzl-patelarpit4242-9178s-projects.vercel.app/",
 ]
 
 if os.getenv("RENDER_EXTERNAL_URL"):
