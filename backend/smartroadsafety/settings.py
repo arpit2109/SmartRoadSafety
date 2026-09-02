@@ -31,7 +31,12 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
 ALLOWED_HOSTS = [
-    "smartroadsafety-1.onrender.com",
+    host.strip()
+    for host in os.getenv(
+        "ALLOWED_HOSTS",
+        "smartroadsafety-1.onrender.com"
+    ).split(",")
+    if host.strip()
 ]
 AUTH_USER_MODEL = "accounts.CustomUser"
 
