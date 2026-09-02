@@ -44,3 +44,4 @@ ultralytics==8.4.100
 ultralytics-thop==2.0.20
 urllib3==2.7.0
 daphne==4.0.0
+channels==4.2.2
