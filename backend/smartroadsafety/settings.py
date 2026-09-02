@@ -29,8 +29,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-l#qn7zp5#x^i%ptrdxz0_i5ta5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
-
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.getenv(
+    'ALLOWED_HOSTS',
+    os.getenv('RENDER_EXTERNAL_HOSTNAME', 'localhost')
+).split(',')
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 
@@ -73,6 +76,18 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+# comment the above line and uncomment the commented line once frontend is deployed
+# CORS_ALLOWED_ORIGINS = [
+#     origin.strip()
+#     for origin in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+#     if origin.strip()
+# ]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
 
 ROOT_URLCONF = 'smartroadsafety.urls'
 
