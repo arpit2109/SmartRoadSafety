@@ -35,6 +35,7 @@ class Command(BaseCommand):
             username=username,
             email=email or "",
             password=password,
+            contact_no=contact_no
         )
 
         self.stdout.write(
