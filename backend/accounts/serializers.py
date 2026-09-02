@@ -15,6 +15,26 @@ class UserRegisterInputSerializer(serializers.ModelSerializer):
         validate_password(value)
         return value
 
+    def validate_contact_no(self, value):
+        value = value.strip()
+
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "Contact number should contain digits only."
+            )
+
+        if len(value) != 10:
+            raise serializers.ValidationError(
+                "Contact number must contain exactly 10 digits."
+            )
+
+        if value[0] not in "6789":
+            raise serializers.ValidationError(
+                "Contact number must start with 6, 7, 8 or 9."
+            )
+
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = CustomUser(**validated_data)
@@ -38,10 +58,14 @@ class ProfileInputSerializer(serializers.ModelSerializer):
 
 class ProfileOutputSerializer(serializers.ModelSerializer):
     profile_picture = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
+    date_joined = serializers.DateTimeField(source='user.date_joined', read_only=True)
 
     class Meta:
         model = Profile
-        fields = ("id", "firstname", "lastname", "profile_picture")
+        fields = ("id", "firstname", "lastname", "profile_picture", "username", "email", "is_staff", "date_joined")
 
     def get_profile_picture(self, obj):
         if obj.profile_picture:
@@ -49,3 +73,14 @@ class ProfileOutputSerializer(serializers.ModelSerializer):
             url = obj.profile_picture.url
             return request.build_absolute_uri(url) if request else url
         return None
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value

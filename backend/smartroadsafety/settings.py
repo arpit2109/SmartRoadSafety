@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +24,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-l#qn7zp5#x^i%ptrdxz0_i5ta5m&-1cjwv$kpk+dxrki%f(4fy'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-l#qn7zp5#x^i%ptrdxz0_i5ta5m&-1cjwv$kpk+dxrki%f(4fy')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['localhost', '127.0.0.1']
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
@@ -33,6 +37,7 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',   # must be before django.contrib.staticfiles for runserver auto-detect
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,7 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "rest_framework",
+    'rest_framework_simplejwt.token_blacklist',
     "corsheaders",
+    "channels",   # WebSocket support for live video detection preview
 
     "accounts",
     "detection",
@@ -85,6 +92,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'smartroadsafety.wsgi.application'
+ASGI_APPLICATION = 'smartroadsafety.asgi.application'
+
+# Channels layer — InMemory for dev (single-process). For production, swap to Redis.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
 
 
 # Database
@@ -150,8 +165,14 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 MEDIA_URL = "/media/"
 
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Allow large .pt weight uploads (default is 2.5 MB which is way too small).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
