@@ -10,10 +10,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         User = get_user_model()
 
-        username = 'admin'
-        email = 'patelarpit123@gmail.com'
-        contact_no = '9876543210'
-        password = 'patel@123'
+        username = os.getenv("ADMIN_USERNAME")
+        email = os.getenv("ADMIN_EMAIL")
+        contact_no = os.getenv("ADMIN_CONTACT_NO")
+        password = os.getenv("ADMIN_PASSWORD")
 
         if not username or not password:
             self.stdout.write(
