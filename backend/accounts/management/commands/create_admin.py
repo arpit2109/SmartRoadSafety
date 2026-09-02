@@ -12,6 +12,7 @@ class Command(BaseCommand):
 
         username = 'admin'
         email = 'patelarpit123@gmail.com'
+        contact_no = '9876543210'
         password = 'patel@123'
 
         if not username or not password:
