@@ -89,6 +89,10 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
+if os.getenv("RENDER_EXTERNAL_URL"):
+    CSRF_TRUSTED_ORIGINS.append(
+        os.getenv("RENDER_EXTERNAL_URL").rstrip("/")
+    )
 ROOT_URLCONF = 'smartroadsafety.urls'
 
 TEMPLATES = [
